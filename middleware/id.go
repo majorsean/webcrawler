@@ -1,8 +1,8 @@
 /*
 * @Author: wang
 * @Date:   2017-04-05 11:57:32
-* @Last Modified by:   wang
-* @Last Modified time: 2017-04-05 12:06:39
+* @Last Modified by:   wangshuo
+* @Last Modified time: 2017-04-06 11:52:06
  */
 
 package middleware
@@ -13,7 +13,7 @@ import (
 )
 
 type IdGenerator interface {
-	GetUint32()
+	GetUint32() uint32
 }
 
 type myIdGenerator struct {
