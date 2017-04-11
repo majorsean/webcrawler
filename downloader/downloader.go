@@ -1,13 +1,14 @@
 /*
 * @Author: wang
 * @Date:   2017-04-05 11:53:24
-* @Last Modified by:   wang
-* @Last Modified time: 2017-04-05 11:59:59
+* @Last Modified by:   wangshuo
+* @Last Modified time: 2017-04-07 16:02:44
  */
 
 package downloader
 
 import (
+	"net/http"
 	"webcrawler/base"
 	mdw "webcrawler/middleware"
 )
@@ -19,6 +20,32 @@ type PageDownloader interface {
 	Download(req base.Request) (*base.Response, error)
 }
 
-func Download() {
+type myPageDownloader struct {
+	id         uint32
+	httpClient http.Client
+}
 
+func genDownloaderId() uint32 {
+	return downloaderIdGenerator.GetUint32()
+}
+
+func NewPageDownloader(client *http.Client) PageDownloader {
+	id := genDownloaderId()
+	if client == nil {
+		client = &http.Client{}
+	}
+	return &myPageDownloader{id: id, httpClient: *client}
+}
+
+func (dl *myPageDownloader) Id() uint32 {
+	return dl.id
+}
+
+func (dl *myPageDownloader) Download(req base.Request) (*base.Response, error) {
+	httpReq := req.HttpReq()
+	httpResp, err := dl.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return base.NewResponse(httpResp, req.Depth()), nil
 }
