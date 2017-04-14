@@ -2,19 +2,19 @@
 * @Author: wang
 * @Date:   2017-04-05 14:10:51
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-11 10:21:46
+* @Last Modified time: 2017-04-11 10:26:09
  */
 
 package downloader
 
 import (
-	"reflect"
-	"fmt"
 	"errors"
+	"fmt"
+	"reflect"
 	mdw "webcrawler/middleware"
 )
 
-type GenPageDownloader() func() PageDownloader
+type GenPageDownloader func() PageDownloader
 
 type PageDownloaderPool interface {
 	Take() (PageDownloader, error)
@@ -28,30 +28,30 @@ type myDownloaderPool struct {
 	etype reflect.Type
 }
 
-func NewPageDownloaderPool(total uint32,gen GenPageDownloader) (PageDownloaderPool,error) {
+func NewPageDownloaderPool(total uint32, gen GenPageDownloader) (PageDownloaderPool, error) {
 	etype := reflect.TypeOf(gen())
-	genEntity := func() mdw.Entity{
+	genEntity := func() mdw.Entity {
 		return gen()
 	}
-	pool,err := mdw.NewPool(total, etype, genEntity)
+	pool, err := mdw.NewPool(total, etype, genEntity)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-	dlpool := &myDownloaderPool{pool:pool,etype:etype}
-	return dlpool,nil
+	dlpool := &myDownloaderPool{pool: pool, etype: etype}
+	return dlpool, nil
 }
 
 func (dp *myDownloaderPool) Take() (PageDownloader, error) {
-	entity ,err := dp.pool.Take()
+	entity, err := dp.pool.Take()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-	dl,ok := entity.(PageDownloader)
+	dl, ok := entity.(PageDownloader)
 	if !ok {
 		errMsg := fmt.Sprintf("The type of entity is NOT %s!\n", dp.etype)
 		panic(errors.New(errMsg))
 	}
-	return dl,nil
+	return dl, nil
 }
 
 func (dp *myDownloaderPool) Return(dl PageDownloader) error {

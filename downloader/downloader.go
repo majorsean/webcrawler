@@ -2,7 +2,7 @@
 * @Author: wang
 * @Date:   2017-04-05 11:53:24
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-07 16:02:44
+* @Last Modified time: 2017-04-11 10:27:06
  */
 
 package downloader
@@ -43,7 +43,7 @@ func (dl *myPageDownloader) Id() uint32 {
 
 func (dl *myPageDownloader) Download(req base.Request) (*base.Response, error) {
 	httpReq := req.HttpReq()
-	httpResp, err := dl.httpClient.Do(req)
+	httpResp, err := dl.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
