@@ -2,7 +2,7 @@
 * @Author: wang
 * @Date:   2017-04-05 15:07:42
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-14 17:53:22
+* @Last Modified time: 2017-04-19 10:38:48
  */
 
 package scheduler
@@ -35,8 +35,8 @@ var logger logging.Logger = logging.NewSimpleLogger()
 type GenhttpClient func() *http.Client
 
 type Scheduler interface {
-	Start(channelLen uint,
-		poolSize uint32,
+	Start(channelArgs base.ChannelArgs,
+		poolBaseArgs base.PoolBaseArgs,
 		crawlDepth uint32,
 		httpClientGenerator GenhttpClient,
 		respParsers []analyzer.ParseResponse,
@@ -50,8 +50,8 @@ type Scheduler interface {
 }
 
 type myScheduler struct {
-	poolSize      uint32
-	channelLen    uint
+	channelArgs   base.ChannelArgs
+	poolBaseArgs  base.PoolBaseArgs
 	crawlDepth    uint32
 	primaryDomain string
 	chanman       mdw.ChannelManager
@@ -68,8 +68,8 @@ func NewScheduler() Scheduler {
 	return &myScheduler{}
 }
 
-func (sched *myScheduler) Start(channelLen uint,
-	poolSize uint32,
+func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
+	poolBaseArgs base.PoolBaseArgs,
 	crawlDepth uint32,
 	httpClientGenerator GenhttpClient,
 	respParsers []analyzer.ParseResponse,
@@ -83,36 +83,35 @@ func (sched *myScheduler) Start(channelLen uint,
 			err = errors.New(errMsg)
 		}
 	}()
-
 	if atomic.LoadUint32(&sched.running) == 1 {
 		return errors.New("The scheduler has been started!\n")
 	}
 	atomic.StoreUint32(&sched.running, 1)
 
-	if channelLen == 0 {
-		return errors.New("The channel max length (capcity) can not be 0!\n")
+	if err := channelArgs.Check(); err != nil {
+		return err
 	}
-	sched.channelLen = channelLen
+	sched.channelArgs = channelArgs
 
-	if poolSize == 0 {
-		return errors.New("The pool size can not be 0!\n")
+	if err := poolBaseArgs.Check(); err != nil {
+		return err
 	}
-	sched.poolSize = poolSize
+	sched.poolBaseArgs = poolBaseArgs
 	sched.crawlDepth = crawlDepth
 
-	sched.chanman = generateChannelManager(sched.channelLen)
+	sched.chanman = generateChannelManager(sched.channelArgs)
 	if httpClientGenerator == nil {
 		return errors.New("The Http Client generator list is invalid!\n")
 	}
 
-	dlpool, err := generatePageDownloaderPool(sched.poolSize, httpClientGenerator)
+	dlpool, err := generatePageDownloaderPool(sched.poolBaseArgs.PageDownloaderPoolSize(), httpClientGenerator)
 	if err != nil {
 		errMsg := fmt.Sprintf("Occur error when get page downloader pool: %s\n", err)
 		return errors.New(errMsg)
 	}
 	sched.dlpool = dlpool
 
-	analyzerPool, err := generateAnalyzerPool(sched.poolSize)
+	analyzerPool, err := generateAnalyzerPool(sched.poolBaseArgs.AnalyzerPoolSize())
 	if err != nil {
 		errMsg := fmt.Sprintf("Occur error when get analyzer pool: %s\n", err)
 		return errors.New(errMsg)
@@ -135,6 +134,7 @@ func (sched *myScheduler) Start(channelLen uint,
 		sched.stopSign.Reset()
 	}
 
+	sched.reqCache = newRequestCache()
 	sched.urlMap = make(map[string]bool)
 
 	sched.startDownloading()

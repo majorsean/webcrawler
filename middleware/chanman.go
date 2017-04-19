@@ -2,7 +2,7 @@
 * @Author: wangshuo
 * @Date:   2017-04-05 15:57:30
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-06 11:52:27
+* @Last Modified time: 2017-04-19 09:45:44
  */
 
 package middleware
@@ -29,39 +29,35 @@ var statusMap = map[ChannelManagerStatus]string{
 }
 
 type ChannelManager interface {
-	Init(channelLen uint, reset bool) bool
+	Init(channelArgs base.ChannelArgs, reset bool) bool
 	Close() bool
 	ReqChan() (chan base.Request, error)
 	RespChan() (chan base.Response, error)
 	ItemChan() (chan base.Item, error)
 	ErrorChan() (chan error, error)
 	Status() ChannelManagerStatus
-	ChannelLen() uint
 	Summary() string
 }
 
 type myChannelManager struct {
-	channelLen uint
-	reqCh      chan base.Request
-	respCh     chan base.Response
-	itemCh     chan base.Item
-	errorCh    chan error
-	status     ChannelManagerStatus
-	rwmutex    sync.RWMutex
+	channalArgs base.ChannelArgs
+	reqCh       chan base.Request
+	respCh      chan base.Response
+	itemCh      chan base.Item
+	errorCh     chan error
+	status      ChannelManagerStatus
+	rwmutex     sync.RWMutex
 }
 
-func NewChannelManager(channelLen uint) ChannelManager {
-	if channelLen == 0 {
-		channelLen = 100
-	}
+func NewChannelManager(channelArgs base.ChannelArgs) ChannelManager {
 	chanm := &myChannelManager{}
-	chanm.Init(channelLen, true)
+	chanm.Init(channelArgs, true)
 	return chanm
 }
 
-func (chanman *myChannelManager) Init(channelLen uint, reset bool) bool {
-	if channelLen == 0 {
-		panic(errors.New("The channel length is invalid!"))
+func (chanman *myChannelManager) Init(channalArgs base.ChannelArgs, reset bool) bool {
+	if err := channalArgs.Check(); err != nil {
+		panic(err)
 	}
 	chanman.rwmutex.Lock()
 	defer chanman.rwmutex.Unlock()
@@ -69,11 +65,11 @@ func (chanman *myChannelManager) Init(channelLen uint, reset bool) bool {
 		return false
 	}
 
-	chanman.channelLen = channelLen
-	chanman.reqCh = make(chan base.Request, channelLen)
-	chanman.respCh = make(chan base.Response, channelLen)
-	chanman.itemCh = make(chan base.Item, channelLen)
-	chanman.errorCh = make(chan error, channelLen)
+	chanman.channalArgs = channalArgs
+	chanman.reqCh = make(chan base.Request, channalArgs.ReqChanLen())
+	chanman.respCh = make(chan base.Response, channalArgs.RespChanLen())
+	chanman.itemCh = make(chan base.Item, channalArgs.ItemChanLen())
+	chanman.errorCh = make(chan error, channalArgs.ErrorChanLen())
 	chanman.status = CHANNEL_MANAGET_STATUS_INITIALIZED
 
 	return true
@@ -156,10 +152,6 @@ func (chanman *myChannelManager) Summary() string {
 		len(chanman.itemCh), cap(chanman.itemCh),
 		len(chanman.errorCh), cap(chanman.errorCh))
 	return summary
-}
-
-func (chanman *myChannelManager) ChannelLen() uint {
-	return chanman.channelLen
 }
 
 func (chanman *myChannelManager) Status() ChannelManagerStatus {

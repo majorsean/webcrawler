@@ -2,7 +2,7 @@
 * @Author: wang
 * @Date:   2017-04-05 15:31:11
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-14 18:13:15
+* @Last Modified time: 2017-04-19 09:48:18
  */
 
 package scheduler
@@ -10,7 +10,7 @@ package scheduler
 import (
 	"bytes"
 	"fmt"
-	// base "webcrawler/base"
+	base "webcrawler/base"
 )
 
 type SchedSummary interface {
@@ -41,8 +41,8 @@ func NewSchedSummary(sched *myScheduler, prefix string) SchedSummary {
 	return &mySchedSummary{
 		prefix:              prefix,
 		running:             sched.running,
-		channelLen:          sched.channelLen,
-		poolSize:            sched.poolSize,
+		channelArgs:         sched.channelArgs,
+		poolBaseArgs:        sched.poolBaseArgs,
 		crawlDepth:          sched.crawlDepth,
 		chanmanSummary:      sched.chanman.Summary(),
 		reqCacheSummary:     sched.reqCache.summary(),
@@ -61,8 +61,8 @@ type mySchedSummary struct {
 	prefix              string // 前缀。
 	running             uint32 // 运行标记。
 	crawlDepth          uint32 // 爬取的最大深度。
-	channelLen          uint
-	poolSize            uint32
+	channelArgs         base.ChannelArgs
+	poolBaseArgs        base.PoolBaseArgs
 	chanmanSummary      string // 通道管理器的摘要信息。
 	reqCacheSummary     string // 请求缓存的摘要信息。
 	dlPoolLen           uint32 // 网页下载器池的长度。
@@ -87,8 +87,8 @@ func (ss *mySchedSummary) Detail() string {
 func (ss *mySchedSummary) getSummary(detail bool) string {
 	prefix := ss.prefix
 	template := prefix + "Running: %v \n" +
-		prefix + "Channel length: %d \n" +
-		prefix + "Pool size: %d \n" +
+		prefix + "Channel args: %d \n" +
+		prefix + "Pool base args: %d \n" +
 		prefix + "Crawl depth: %d \n" +
 		prefix + "Channels manager: %s \n" +
 		prefix + "Request cache: %s\n" +
@@ -101,8 +101,8 @@ func (ss *mySchedSummary) getSummary(detail bool) string {
 		func() bool {
 			return ss.running == 1
 		}(),
-		ss.channelLen,
-		ss.poolSize,
+		ss.channelArgs,
+		ss.poolBaseArgs,
 		ss.crawlDepth,
 		ss.chanmanSummary,
 		ss.reqCacheSummary,
@@ -137,8 +137,8 @@ func (ss *mySchedSummary) Same(other SchedSummary) bool {
 		ss.urlCount != otherSs.urlCount ||
 		ss.stopSignSummary != otherSs.stopSignSummary ||
 		ss.reqCacheSummary != otherSs.reqCacheSummary ||
-		ss.poolSize != otherSs.poolSize ||
-		ss.channelLen != otherSs.channelLen ||
+		ss.poolBaseArgs != otherSs.poolBaseArgs ||
+		ss.channelArgs != otherSs.channelArgs ||
 		ss.itemPipelineSummary != otherSs.itemPipelineSummary ||
 		ss.chanmanSummary != otherSs.chanmanSummary {
 		return false
