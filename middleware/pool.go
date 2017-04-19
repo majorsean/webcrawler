@@ -2,7 +2,7 @@
 * @Author: wangshuo
 * @Date:   2017-04-05 16:21:55
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-06 17:54:50
+* @Last Modified time: 2017-04-19 10:59:14
  */
 
 package middleware
@@ -44,7 +44,7 @@ func NewPool(
 	}
 	size := int(total)
 	container := make(chan Entity, size)
-	idContainer := make(map[uint32]bool, size)
+	idContainer := make(map[uint32]bool)
 	for i := 0; i < size; i++ {
 		newEntity := genEntity()
 		if entityType != reflect.TypeOf(newEntity) {
@@ -54,7 +54,7 @@ func NewPool(
 		container <- newEntity
 		idContainer[newEntity.Id()] = true
 	}
-	pool := &myPool{total: total, entityType: entityType, container: container, genEntity: genEntity}
+	pool := &myPool{total: total, entityType: entityType, container: container, genEntity: genEntity, idContainer: idContainer}
 	return pool, nil
 }
 
