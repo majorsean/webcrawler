@@ -2,7 +2,7 @@
 * @Author: wangshuo
 * @Date:   2017-04-12 12:31:53
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-19 11:22:29
+* @Last Modified time: 2017-04-19 12:42:09
  */
 
 package scheduler
@@ -96,7 +96,6 @@ func parseCode(code string) []string {
 }
 
 func getPrimaryDomain(host string) (string, error) {
-	fmt.Println(host)
 	host = strings.TrimSpace(host)
 	if host == "" {
 		return "", errors.New("The host is empty!")

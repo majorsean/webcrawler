@@ -2,7 +2,7 @@
 * @Author: wang
 * @Date:   2017-04-05 15:07:42
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-19 11:23:47
+* @Last Modified time: 2017-04-19 13:48:46
  */
 
 package scheduler
@@ -13,7 +13,6 @@ import (
 	"logging"
 	"net/http"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 	"webcrawler/analyzer"
@@ -32,7 +31,6 @@ const (
 )
 
 var logger logging.Logger = logging.NewSimpleLogger()
-var wg sync.WaitGroup
 
 type GenhttpClient func() *http.Client
 
@@ -111,7 +109,6 @@ func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
 		errMsg := fmt.Sprintf("Occur error when get page downloader pool: %s\n", err)
 		return errors.New(errMsg)
 	}
-	fmt.Println(dlpool)
 	sched.dlpool = dlpool
 
 	analyzerPool, err := generateAnalyzerPool(sched.poolBaseArgs.AnalyzerPoolSize())
@@ -140,7 +137,6 @@ func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
 	sched.reqCache = newRequestCache()
 	sched.urlMap = make(map[string]bool)
 
-	wg.Add(4)
 	sched.startDownloading()
 	sched.activateAnalyzers(respParsers)
 	sched.openItemPipeline()
@@ -156,13 +152,11 @@ func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
 	sched.primaryDomain = pd
 	firstReq := base.NewRequest(firstHttpReq, 0)
 	sched.reqCache.put(firstReq)
-	wg.Wait()
 	return nil
 }
 
 func (sched *myScheduler) schedule(interval time.Duration) {
 	go func() {
-		defer wg.Done()
 		for {
 			if sched.stopSign.Signed() {
 				sched.stopSign.Deal(SCHEDULER_CODE)
@@ -189,7 +183,6 @@ func (sched *myScheduler) schedule(interval time.Duration) {
 
 func (sched *myScheduler) openItemPipeline() {
 	go func() {
-		defer wg.Done()
 		sched.itemPipeline.SetFailFast(true)
 		code := ITEMPIPELINE_CODE
 		for item := range sched.getItemChan() {
@@ -213,7 +206,6 @@ func (sched *myScheduler) openItemPipeline() {
 
 func (sched *myScheduler) activateAnalyzers(respParsers []analyzer.ParseResponse) {
 	go func() {
-		defer wg.Done()
 		for {
 			resp, ok := <-sched.getRespChan()
 			if !ok {
@@ -330,7 +322,6 @@ func (sched *myScheduler) getItemChan() chan base.Item {
 
 func (sched *myScheduler) startDownloading() {
 	go func() {
-		defer wg.Done()
 		for {
 			req, ok := <-sched.getReqChan()
 			if !ok {

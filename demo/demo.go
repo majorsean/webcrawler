@@ -2,7 +2,7 @@
 * @Author: wangshuo
 * @Date:   2017-04-19 09:49:56
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-19 10:25:00
+* @Last Modified time: 2017-04-19 13:50:56
  */
 
 package main
@@ -21,7 +21,7 @@ import (
 	base "webcrawler/base"
 	pipeline "webcrawler/itempipeline"
 	sched "webcrawler/scheduler"
-	// "webcrawler/tool"
+	"webcrawler/tool"
 )
 
 var logger logging.Logger = logging.NewSimpleLogger()
@@ -37,7 +37,7 @@ func main() {
 	httpClientGenerator := genHttpClient
 	respParsers := getResponseParsers()
 	itemProcessors := getItemProcessors()
-	startUrl := "http://www.sogou.com"
+	startUrl := "http://www.qq.com"
 	firstHttpReq, err := http.NewRequest("GET", startUrl, nil)
 	if err != nil {
 		logger.Errorln(err)
@@ -45,8 +45,28 @@ func main() {
 	}
 
 	scheduler := sched.NewScheduler()
+
+	intervalNs := 10 * time.Millisecond
+	maxIdleCount := uint(1000)
+	checkCountChan := tool.Monitoring(scheduler, intervalNs, maxIdleCount, true, false, record)
+
 	scheduler.Start(channelArgs, poolBaseArgs, crawlDepth, httpClientGenerator, respParsers, itemProcessors, firstHttpReq)
 
+	<-checkCountChan
+}
+
+func record(level byte, content string) {
+	if content == "" {
+		return
+	}
+	switch level {
+	case 0:
+		logger.Infoln(content)
+	case 1:
+		logger.Warnln(content)
+	case 2:
+		logger.Fatalln(content)
+	}
 }
 
 func getResponseParsers() []analyzer.ParseResponse {
