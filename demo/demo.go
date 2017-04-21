@@ -2,7 +2,7 @@
 * @Author: wangshuo
 * @Date:   2017-04-19 09:49:56
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-19 13:50:56
+* @Last Modified time: 2017-04-21 11:20:20
  */
 
 package main
@@ -33,11 +33,11 @@ func genHttpClient() *http.Client {
 func main() {
 	channelArgs := base.NewChannelArgs(10, 10, 10, 10)
 	poolBaseArgs := base.NewPoolBaseArgs(3, 3)
-	crawlDepth := uint32(1)
+	crawlDepth := uint32(10)
 	httpClientGenerator := genHttpClient
 	respParsers := getResponseParsers()
 	itemProcessors := getItemProcessors()
-	startUrl := "http://www.qq.com"
+	startUrl := "https://www.zhihu.com/collection/20615676"
 	firstHttpReq, err := http.NewRequest("GET", startUrl, nil)
 	if err != nil {
 		logger.Errorln(err)
@@ -61,9 +61,9 @@ func record(level byte, content string) {
 	}
 	switch level {
 	case 0:
-		logger.Infoln(content)
+		// logger.Infoln(content)
 	case 1:
-		logger.Warnln(content)
+		// logger.Warnln(content)
 	case 2:
 		logger.Fatalln(content)
 	}

@@ -2,7 +2,7 @@
 * @Author: wang
 * @Date:   2017-04-05 15:07:42
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-19 13:48:46
+* @Last Modified time: 2017-04-21 14:53:30
  */
 
 package scheduler
@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"logging"
 	"net/http"
-	"strings"
+	// "strings"
 	"sync/atomic"
 	"time"
 	"webcrawler/analyzer"
@@ -86,7 +86,6 @@ func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
 	if atomic.LoadUint32(&sched.running) == 1 {
 		return errors.New("The scheduler has been started!\n")
 	}
-	atomic.StoreUint32(&sched.running, 1)
 
 	if err := channelArgs.Check(); err != nil {
 		return err
@@ -152,6 +151,7 @@ func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
 	sched.primaryDomain = pd
 	firstReq := base.NewRequest(firstHttpReq, 0)
 	sched.reqCache.put(firstReq)
+	atomic.StoreUint32(&sched.running, 1)
 	return nil
 }
 
@@ -274,10 +274,10 @@ func (sched *myScheduler) saveReqToCache(req base.Request, code string) bool {
 		return false
 	}
 
-	if strings.ToLower(reqUrl.Scheme) != "http" {
-		logger.Warnf("Ignore the request! It's url scheme '%s', but should be 'http'!\n", reqUrl.Scheme)
-		return false
-	}
+	// if strings.ToLower(reqUrl.Scheme) != "http" {
+	// 	logger.Warnf("Ignore the request! It's url scheme '%s', but should be 'http'!\n", reqUrl.Scheme)
+	// 	return false
+	// }
 
 	if _, ok := sched.urlMap[reqUrl.String()]; ok {
 		logger.Warnf("Ignore the request! It's url is repeated. (requestUrl=%s)\n", reqUrl)
@@ -422,12 +422,10 @@ func (sched *myScheduler) sendError(err error, code string) bool {
 }
 
 func (sched *myScheduler) Stop() bool {
-	if atomic.LoadUint32(&sched.running) != 1 {
+	if atomic.LoadUint32(&sched.running) != 1 || !sched.stopSign.Sign() || !sched.chanman.Close() {
 		return false
 	}
-	sched.stopSign.Sign()
 	sched.reqCache.close()
-	sched.chanman.Close()
 	atomic.StoreUint32(&sched.running, 2)
 	return true
 }
