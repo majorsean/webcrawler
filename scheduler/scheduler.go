@@ -2,7 +2,7 @@
 * @Author: wang
 * @Date:   2017-04-05 15:07:42
 * @Last Modified by:   wangshuo
-* @Last Modified time: 2017-04-21 14:53:30
+* @Last Modified time: 2017-04-24 16:34:17
  */
 
 package scheduler
@@ -139,7 +139,7 @@ func (sched *myScheduler) Start(channelArgs base.ChannelArgs,
 	sched.startDownloading()
 	sched.activateAnalyzers(respParsers)
 	sched.openItemPipeline()
-	sched.schedule(10 * time.Millisecond)
+	sched.schedule(100 * time.Millisecond)
 
 	if firstHttpReq == nil {
 		return errors.New("The first Http request is invalid!\n")
@@ -183,7 +183,7 @@ func (sched *myScheduler) schedule(interval time.Duration) {
 
 func (sched *myScheduler) openItemPipeline() {
 	go func() {
-		sched.itemPipeline.SetFailFast(true)
+		sched.itemPipeline.SetFailFast(false)
 		code := ITEMPIPELINE_CODE
 		for item := range sched.getItemChan() {
 			go func(item base.Item) {
@@ -259,6 +259,7 @@ func (sched *myScheduler) analyze(respParsers []analyzer.ParseResponse, resp bas
 			sched.sendError(err, code)
 		}
 	}
+	// os.Exit(0)
 }
 
 func (sched *myScheduler) saveReqToCache(req base.Request, code string) bool {
@@ -327,6 +328,7 @@ func (sched *myScheduler) startDownloading() {
 			if !ok {
 				break
 			}
+
 			go sched.download(req)
 		}
 	}()
